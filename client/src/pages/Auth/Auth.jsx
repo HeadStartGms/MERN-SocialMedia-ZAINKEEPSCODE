@@ -10,10 +10,11 @@ const Auth = () => {
     firstname: "",
     lastname: "",
     username: "",
+    email: "",
     password: "",
     confirmpass: "",
   };
-  
+
   const loading = useSelector((state) => state.authReducer.loading);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -40,22 +41,24 @@ const Auth = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(""); // Clear previous error messages
-    
+
     if (isSignUp) {
       if (data.password !== data.confirmpass) {
         setConfirmPass(false);
+        setErrorMessage("Passwords do not match.");
         return;
       }
 
       try {
-        const result = await dispatch(signUp(data, navigate));
+        const result = await dispatch(signUp({ userData: data, navigate }));
         console.log("Full response:", result);
 
         if (result?.error) {
-          setErrorMessage(result.error); // Display backend error to user
-          console.error("Registration failed:", result.error);
-        } else {
-          navigate("/home");
+          setErrorMessage(
+            typeof result.error === "object"
+              ? result.error.message
+              : result.error
+          ); // Handle object or string error
         }
       } catch (error) {
         console.error("Complete error:", {
@@ -100,7 +103,7 @@ const Auth = () => {
       <div className="a-right">
         <form className="infoForm authForm" onSubmit={handleSubmit}>
           <h3>{isSignUp ? "Register" : "Login"}</h3>
-          
+
           {isSignUp && (
             <div>
               <input
@@ -119,6 +122,20 @@ const Auth = () => {
                 className="infoInput"
                 name="lastname"
                 value={data.lastname}
+                onChange={handleChange}
+              />
+            </div>
+          )}
+
+          {isSignUp && (
+            <div>
+              <input
+                required
+                type="email"
+                placeholder="Email"
+                className="infoInput"
+                name="email"
+                value={data.email}
                 onChange={handleChange}
               />
             </div>
@@ -159,30 +176,17 @@ const Auth = () => {
           </div>
 
           {/* Password mismatch error */}
-          <span
-            style={{
-              color: "red",
-              fontSize: "12px",
-              alignSelf: "flex-end",
-              marginRight: "5px",
-              display: confirmPass ? "none" : "block",
-            }}
-          >
-            * Confirm password does not match
-          </span>
-
-          {/* Error messages from backend */}
-          {errorMessage && (
+          {(!confirmPass || errorMessage) && (
             <span
               style={{
                 color: "red",
                 fontSize: "12px",
-                alignSelf: "center",
-                marginBottom: "10px",
+                alignSelf: "flex-end",
+                marginRight: "5px",
                 display: "block",
               }}
             >
-              {errorMessage}
+              {errorMessage || "* Confirm password does not match"}
             </span>
           )}
 

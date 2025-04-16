@@ -13,12 +13,13 @@ const generateToken = (user) => {
 
 // Register new user
 export const registerUser = async (req, res) => {
-  const { firstname, lastname, username, password, confirmpass } = req.body;
+  const { firstname, lastname, username, email, password, confirmpass } = req.body;
 
   const requiredFields = {
     firstname: "First name",
     lastname: "Last name",
     username: "Username",
+    email: "Email",
     password: "Password",
     confirmpass: "Password confirmation"
   };
@@ -40,10 +41,14 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    // Check for existing username
-    const existingUser = await UserModel.findOne({ username });
+    // Check for existing username or email
+    const existingUser = await UserModel.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
-      return res.status(400).json({ error: "Username already exists" });
+      return res.status(400).json({
+        error: existingUser.username === username
+          ? "Username already exists"
+          : "Email already exists"
+      });
     }
 
     // Hash password
@@ -55,6 +60,7 @@ export const registerUser = async (req, res) => {
       firstname,
       lastname,
       username,
+      email,
       password: hashedPassword,
       // Default values for optional fields
       profilePicture: "",

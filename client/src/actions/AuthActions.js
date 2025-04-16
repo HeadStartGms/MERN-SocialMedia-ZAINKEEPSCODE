@@ -2,6 +2,7 @@ import * as AuthApi from "../api/AuthRequests";
 import axios from 'axios';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
+// Login Action
 export const logIn = (formData, navigate) => async (dispatch) => {
   dispatch({ type: "AUTH_START" });
   try {
@@ -13,19 +14,29 @@ export const logIn = (formData, navigate) => async (dispatch) => {
     dispatch({ type: "AUTH_FAIL" });
   }
 };
+
+// Sign Up Action using createAsyncThunk
 export const signUp = createAsyncThunk(
   'auth/signUp',
   async ({ userData, navigate }, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/auth/register', userData);
+      // Ensure userData includes email
+      const response = await axios.post('/auth/register', userData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       navigate('/home');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || {
+        message: 'Registration failed. Please try again.'
+      });
     }
   }
 );
 
+// Traditional Register User Action
 export const registerUser = (userData) => async (dispatch) => {
   try {
     dispatch({ type: 'REGISTER_REQUEST' });
@@ -47,7 +58,7 @@ export const registerUser = (userData) => async (dispatch) => {
 
   } catch (error) {
     const errorMessage = error.response?.data?.message || 
-                       'Registration failed. Please try again.';
+                         'Registration failed. Please try again.';
     
     dispatch({
       type: 'REGISTER_FAIL',
@@ -56,6 +67,7 @@ export const registerUser = (userData) => async (dispatch) => {
   }
 };
 
-export const logout = ()=> async(dispatch)=> {
-  dispatch({type: "LOG_OUT"})
-}
+// Logout Action
+export const logout = () => async (dispatch) => {
+  dispatch({ type: "LOG_OUT" });
+};

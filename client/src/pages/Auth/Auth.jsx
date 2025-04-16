@@ -13,6 +13,7 @@ const Auth = () => {
     password: "",
     confirmpass: "",
   };
+  
   const loading = useSelector((state) => state.authReducer.loading);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -21,37 +22,71 @@ const Auth = () => {
   const [data, setData] = useState(initialState);
 
   const [confirmPass, setConfirmPass] = useState(true);
-
-  // const dispatch = useDispatch()
+  const [errorMessage, setErrorMessage] = useState(""); // For displaying error messages
 
   // Reset Form
   const resetForm = () => {
     setData(initialState);
-    setConfirmPass(confirmPass);
+    setConfirmPass(true); // Reset confirmPass properly
+    setErrorMessage(""); // Clear error messages
   };
 
-  // handle Change in input
+  // Handle input changes
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
   // Form Submission
-  const handleSubmit = (e) => {
-    setConfirmPass(true);
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage(""); // Clear previous error messages
+    
     if (isSignUp) {
-      data.password === data.confirmpass
-        ? dispatch(signUp(data, navigate))
-        : setConfirmPass(false);
+      if (data.password !== data.confirmpass) {
+        setConfirmPass(false);
+        return;
+      }
+
+      try {
+        const result = await dispatch(signUp(data, navigate));
+        console.log("Full response:", result);
+
+        if (result?.error) {
+          setErrorMessage(result.error); // Display backend error to user
+          console.error("Registration failed:", result.error);
+        } else {
+          navigate("/home");
+        }
+      } catch (error) {
+        console.error("Complete error:", {
+          message: error.message,
+          response: error.response?.data,
+          stack: error.stack,
+        });
+        setErrorMessage("Something went wrong. Please try again.");
+      }
     } else {
-      dispatch(logIn(data, navigate));
+      try {
+        const result = await dispatch(logIn(data, navigate));
+        console.log("Login response:", result);
+
+        if (result?.error) {
+          setErrorMessage("Invalid credentials. Please try again.");
+        }
+      } catch (error) {
+        console.error("Login error:", {
+          message: error.message,
+          response: error.response?.data,
+          stack: error.stack,
+        });
+        setErrorMessage("Login failed. Please try again.");
+      }
     }
   };
 
   return (
     <div className="Auth">
-      {/* left side */}
-
+      {/* Left side */}
       <div className="a-left">
         <img src={Logo} alt="" />
 
@@ -61,11 +96,11 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* right form side */}
-
+      {/* Right form side */}
       <div className="a-right">
         <form className="infoForm authForm" onSubmit={handleSubmit}>
           <h3>{isSignUp ? "Register" : "Login"}</h3>
+          
           {isSignUp && (
             <div>
               <input
@@ -117,11 +152,13 @@ const Auth = () => {
                 className="infoInput"
                 name="confirmpass"
                 placeholder="Confirm Password"
+                value={data.confirmpass}
                 onChange={handleChange}
               />
             )}
           </div>
 
+          {/* Password mismatch error */}
           <span
             style={{
               color: "red",
@@ -131,8 +168,24 @@ const Auth = () => {
               display: confirmPass ? "none" : "block",
             }}
           >
-            *Confirm password is not same
+            * Confirm password does not match
           </span>
+
+          {/* Error messages from backend */}
+          {errorMessage && (
+            <span
+              style={{
+                color: "red",
+                fontSize: "12px",
+                alignSelf: "center",
+                marginBottom: "10px",
+                display: "block",
+              }}
+            >
+              {errorMessage}
+            </span>
+          )}
+
           <div>
             <span
               style={{
@@ -146,15 +199,15 @@ const Auth = () => {
               }}
             >
               {isSignUp
-                ? "Already have an account Login"
-                : "Don't have an account Sign up"}
+                ? "Already have an account? Login"
+                : "Don't have an account? Sign up"}
             </span>
             <button
               className="button infoButton"
               type="Submit"
               disabled={loading}
             >
-              {loading ? "Loading..." : isSignUp ? "SignUp" : "Login"}
+              {loading ? "Loading..." : isSignUp ? "Sign Up" : "Login"}
             </button>
           </div>
         </form>

@@ -1,10 +1,33 @@
 import express from 'express';
 import { loginUser, registerUser } from '../controllers/AuthController.js';
 
-const router = express.Router()
+const router = express.Router();
 
+// Add middleware to verify request format
+router.use(express.json());
 
-router.post('/register', registerUser)
-router.post('/login', loginUser)
+// Enhanced route with error handling
+router.post('/register', async (req, res, next) => {
+  try {
+    // Log incoming request for debugging
+    console.log('Registration request body:', req.body);
+    
+    // Manual validation example
+    if (!req.body.email || !req.body.password || !req.body.username) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: email, password, username' 
+      });
+    }
 
-export default router
+    // Proceed to controller
+    await registerUser(req, res, next);
+    
+  } catch (error) {
+    console.error('Registration route error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/login', loginUser);
+
+export default router;
